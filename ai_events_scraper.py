@@ -1,3 +1,4 @@
+import feedparser  
 import streamlit as st
 import pandas as pd
 import requests
@@ -65,7 +66,11 @@ if st.button("🔍 Scrape Now"):
         scrape_mlconf() +
         scrape_google_ai() +
         scrape_meetup() +
-        scrape_devpost()
+        scrape_devpost() +
+        scrape_ai_expo() +
+        scrape_paperswithcode() +
+        scrape_ai_weekly() +
+        scrape_arxiv_ml()
     )
     df = pd.DataFrame(data)
     st.success("✅ Scraped successfully!")
@@ -77,3 +82,74 @@ if st.button("🔍 Scrape Now"):
 
     st.markdown("### 📋 Copy this for email (or paste into Gmail)")
     st.code(df.to_markdown(index=False), language="markdown")
+
+def scrape_ai_expo():
+    url = "https://www.ai-expo.net/global/"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    events = []
+    for item in soup.select('div.event-post'):
+        title_tag = item.select_one("h4")
+        link_tag = item.select_one("a")
+        date_tag = item.select_one("div.date")
+
+        if title_tag and link_tag:
+            events.append({
+                'Title': title_tag.get_text(strip=True),
+                'Date': date_tag.get_text(strip=True) if date_tag else '-',
+                'Link': link_tag['href'],
+                'Source': 'AI Expo'
+            })
+    return events
+
+def scrape_paperswithcode():
+    url = "https://paperswithcode.com/trending"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    papers = []
+    for paper in soup.select("div.paper-card"):
+        title_tag = paper.select_one("h1.paper-title a")
+        if title_tag:
+            papers.append({
+                'Title': title_tag.get_text(strip=True),
+                'Date': '-',  # No date available
+                'Link': "https://paperswithcode.com" + title_tag['href'],
+                'Source': 'PapersWithCode'
+            })
+    return papers
+
+def scrape_ai_weekly():
+    url = "https://aiweekly.co/issues"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    issues = []
+    for issue in soup.select("div.issue-list li"):
+        link = issue.select_one("a")
+        if link:
+            issues.append({
+                'Title': link.get_text(strip=True),
+                'Date': '-',  # Optional: extract date from text
+                'Link': link['href'],
+                'Source': 'AI Weekly'
+            })
+    return issues
+
+def scrape_arxiv_ml():
+    feed_url = "http://export.arxiv.org/rss/cs.LG"  # Machine Learning RSS
+    feed = feedparser.parse(feed_url)
+
+    entries = []
+    for entry in feed.entries[:10]:
+        entries.append({
+            'Title': entry.title,
+            'Date': entry.published,
+            'Link': entry.link,
+            'Source': 'arXiv ML'
+        })
+    return entries
