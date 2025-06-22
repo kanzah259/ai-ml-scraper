@@ -60,19 +60,26 @@ def scrape_devpost():
     return [{'Title': 'AI Hackathon on Devpost', 'Date': 'Open', 'Link': 'https://devpost.com/hackathons', 'Source': 'Devpost'}]
 
 if st.button("🔍 Scrape Now"):
-    data = (
-        scrape_eventbrite() +
-        scrape_kaggle() +
-        scrape_mlconf() +
-        scrape_google_ai() +
-        scrape_meetup() +
-        scrape_devpost() +
-        scrape_ai_expo() +
-        scrape_paperswithcode() +
-        scrape_ai_weekly() +
-        scrape_arxiv_ml()
-    )
-    df = pd.DataFrame(data)
+    all_sources = []
+    with st.spinner("Scraping sources..."):
+        for func in [
+            scrape_eventbrite,
+            scrape_kaggle,
+            scrape_mlconf,
+            scrape_google_ai,
+            scrape_meetup,
+            scrape_devpost,
+            scrape_ai_expo,
+            scrape_paperswithcode,
+            scrape_ai_weekly,
+            scrape_arxiv_ml,
+        ]:
+            try:
+                all_sources.extend(func())
+            except Exception as e:
+                st.warning(f"⚠️ {func.__name__} failed: {e}")
+
+    df = pd.DataFrame(all_sources)
     st.success("✅ Scraped successfully!")
 
     st.dataframe(df, use_container_width=True)
@@ -82,6 +89,7 @@ if st.button("🔍 Scrape Now"):
 
     st.markdown("### 📋 Copy this for email (or paste into Gmail)")
     st.code(df.to_markdown(index=False), language="markdown")
+
 
 def scrape_ai_expo():
     url = "https://www.ai-expo.net/global/"
